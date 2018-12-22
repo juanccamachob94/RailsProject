@@ -38,6 +38,9 @@ gem 'best_in_place', '~> 3.0.1'
 gem 'jquery-rails'
 gem 'jquery-ui-rails'
 gem 'paperclip','~> 6.0.0'
+gem 'aasm'
+gem 'activemodel-serializers-xml',github:'rails/activemodel-serializers-xml'
+gem 'draper',github:'audionerd/draper',branch:'rails5'
 # Use ActiveStorage variant
 # gem 'mini_magick', '~> 4.8'
 
