@@ -1,0 +1,462 @@
+1. Creo el proyecto mediante el siguiente comando
+rails new MiPrimerProyecto
+2. Agrego las gemas devise y haml en el archivo Gemfile
+gem 'devise'
+gem 'haml'
+el segundo teóricamente sería 'haml-rails' pero éste está desarrollado para Rails 4, según la documentación (https://github.com/haml/haml)  basta con la instrucción haml.
+3. Instalar las dependencias mediante el comando
+bundle install
+4. Según la documentación de devise, una vez instalo la librería debo ejecutar el generador
+rails generate devise:install
+5. Según la documentación de devise se procede a generar el modelo para la gestión de usuarios
+rails generate devise MODEL donde MODEL generalmente es User o Admin. En este caso ejecutaré el siguiente comando:
+rails generate devise User
+6. Para seguir el tutorial voy a modificar el modelo en db/migrate/....create_users para que tenga variables nuevas:
+
+t.string :username
+t.string :name
+t.string :last_name
+t.text :bio
+
+Este paso no es realmente necesario a menos que el modelo User se quiera modificar a algo específico al problema a resolver.
+7. Se ejecuta la migración con devise:
+rails db:migrate
+
+NOTA: Las funciones javascript de Material Design no funcionan por causa de turbolinks que es importado en los layouts. COn esta configuración de javascript se corrige:
+document.addEventListener('page:change', function() {
+  componentHandler.upgradeDom();
+});
+pero no funciona y se debe usar:
+document.addEventListener('turbolinks:load', function() {
+  componentHandler.upgradeDom();
+});
+
+NOTA: Actualmente tengo el problema de que en haml no me reconoce =grid y es porque no he instalado la gema de flexbox, para eso voy a agregar y ejecutar:
+gem 'flexbox_rb'
+
+########################################################################################################################################################################
+########################################################################################################################################################################
+########################################################################################################################################################################
+########################################################################################################################################################################
+########################################################################################################################################################################
+
+C:\Users\Developer\Documents\CURSOS_PROGRAMACION\CodigoFacilito\RubyOnRails\MiPrimerProyecto>rails generate devise:install
+      create  config/initializers/devise.rb
+      create  config/locales/devise.en.yml
+===============================================================================
+
+Some setup you must do manually if you haven't yet:
+
+  1. Ensure you have defined default url options in your environments files. Here
+     is an example of default_url_options appropriate for a development environment
+     in config/environments/development.rb:
+
+       config.action_mailer.default_url_options = { host: 'localhost', port: 3000 }
+
+     In production, :host should be set to the actual host of your application.
+
+  2. Ensure you have defined root_url to *something* in your config/routes.rb.
+     For example:
+
+       root to: "home#index"
+
+  3. Ensure you have flash messages in app/views/layouts/application.html.erb.
+     For example:
+
+       <p class="notice"><%= notice %></p>
+       <p class="alert"><%= alert %></p>
+
+  4. You can copy Devise views (for customization) to your app by running:
+
+       rails g devise:views
+
+===============================================================================
+
+C:\Users\Developer\Documents\CURSOS_PROGRAMACION\CodigoFacilito\RubyOnRails\MiPrimerProyecto>rails generate devise User
+      invoke  active_record
+      create    db/migrate/20181213054832_devise_create_users.rb
+      create    app/models/user.rb
+      invoke    test_unit
+      create      test/models/user_test.rb
+      create      test/fixtures/users.yml
+      insert    app/models/user.rb
+       route  devise_for :users
+
+C:\Users\Developer\Documents\CURSOS_PROGRAMACION\CodigoFacilito\RubyOnRails\MiPrimerProyecto>rails db:migrate
+== 20181213054832 DeviseCreateUsers: migrating ================================
+-- create_table(:users)
+   -> 0.0030s
+-- add_index(:users, :email, {:unique=>true})
+   -> 0.0024s
+-- add_index(:users, :reset_password_token, {:unique=>true})
+   -> 0.0017s
+== 20181213054832 DeviseCreateUsers: migrated (0.0135s) =======================
+
+
+C:\Users\Developer\Documents\CURSOS_PROGRAMACION\CodigoFacilito\RubyOnRails\MiPrimerProyecto>
+
+########################################################################################################################################################################
+########################################################################################################################################################################
+########################################################################################################################################################################
+########################################################################################################################################################################
+########################################################################################################################################################################
+
+7.5 Esto se hace para modificar y/o tener acceso al contenido frontend devise
+Ahora por deseos del tutorial voy a crear las vistas de devise:
+rails g devise:views
+Esto crea la carpeta devise en views con sus respectivos archivos.
+
+Ahora se modifica el archivo app/views/devise/registrations/new.html.erb
+para que itnegre los nuevos atributos al formulario: username, name y last_name
+
+8. Creo el controlador init para el inicio de la página. Para ello en la carpeta app/controllers con el nombre init_controller.rb
+En este archivo escribo lo siguiente:
+class InitController < ApplicationController
+  def authenticated
+  end
+  def unauthenticated
+  end
+end
+Desde el archivo routes.rb localizado en la carpeta config, se indica el enrutamiento
+authenticated :user do
+  root "init#authenticated"
+end
+unauthenticated :user do
+  root "init#unauthenticated"
+end
+De esta forma el controlador init llamará a las funciones authenticated y unauthenticated respectivamente dependiendo la autenticación del usuario.
+
+9. En view se crea una carpeta por controlador, en este caso sería init. Se crea la carpeta init en app/views
+Las funciones authenticated y unauthenticated deben ser expresadas en archivos. Como se está trabajando con haml se crearán los archivos authenticated.haml y unauthenticated.haml en la carpeta init.
+
+PRUEBA DE FUNCIONALIDAD: Como una prueba de la funcionalidad de lo que se ha creado hasta el momento levanto el servicio con:
+rails s
+al acceder a localhost:3000 la página cargada muestra el contenido HTML del archivo unauthenticated.haml.
+la ruta http://localhost:3000/users/sign_up funciona correctamente.
+Gracias a las pruebas me di cuenta de que la petición http://localhost:3000/users/sign_up es resuelta por app/views/registrations/new.
+
+
+10. En la prueba presenté  el siguiente [ERROR]: ActionController::InvalidAuthenticityToken el cual se solucionó,por lo que entiendo, permitiendo el manejo de dichas variables. Modifiqué el ApplicationController para que los parámetros puedan ser configurados tanto en sign_up como account_update. Este es el código completo hasta el momento de ApplicationController.
+
+
+
+class ApplicationController < ActionController::Base
+  protect_from_forgery with: :exception
+  before_action :configure_permitted_parameters, if: :devise_controller?
+   protected
+    def configure_permitted_parameters
+      devise_parameter_sanitizer.permit(:sign_up, keys: [:username, :name, :last_name])
+      devise_parameter_sanitizer.permit(:account_update, keys: [:username, :name, :last_name])
+    end
+end
+
+
+
+
+11.
+ A continuación se prueba el cambio de layouts para cada vista de forma que pueda utilizar diferentes layouts en diferentes vistas dependendiendo determinados valores de variables.
+ Esto parte de crear el nuevo layout que llamé another.haml y coloqué el siguiente código guía con base en el layout application.html.erb
+ !!! 5
+ %html
+   %head
+     %title RailsProject - Another
+     = csrf_meta_tags
+     = stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload'
+     = javascript_include_tag 'application', 'data-turbolinks-track': 'reload'
+   %body
+     %h1 It is another layout
+     %a{href:"/users/sign_up"}  sign_up
+     %br
+     %a{href:"/users/sign_in"}  sign_in
+     = yield
+Ahora desde el ApplicationController modifico la función layout mediante la llamada a la función layout pasando por parámetro :set_layout que hace referencia a la función local y protegida llamada set_layout que devuelve únicamente "application" para el uso de application.html.erb, sin embargo en el controlador de Init que hereda de ApplicationController hago una modificación a esta función para cambiar a otro layout en caso de que no se haya iniciado sesión. La variable del if se refiere al nombre de la función ejecutada que es igual al nombre del archivo de frontend
+class ApplicationController < ActionController::Base
+  protect_from_forgery with: :exception
+  before_action :configure_permitted_parameters, if: :devise_controller?
+  layout :set_layout
+   protected
+    def configure_permitted_parameters
+      devise_parameter_sanitizer.permit(:sign_up, keys: [:username, :name, :last_name])
+      devise_parameter_sanitizer.permit(:account_update, keys: [:username, :name, :last_name])
+    end
+    def set_layout
+      "application"
+    end
+end
+class InitController < ApplicationController
+  def authenticated
+  end
+  def unauthenticated
+  end
+  protected
+    def set_layout
+      return "another" if action_name == "unauthenticated"
+      super
+    end
+end
+
+##################################################################################################################################################
+##################################################################################################################################################
+##################################################################################################################################################
+##################################################################################################################################################
+##################################################################################################################################################
+Validaciones:
+1. front-end
+2. Base de datos
+3. Backend -> seguridad
+
+##################################################################################################################################################
+##################################################################################################################################################
+##################################################################################################################################################
+##################################################################################################################################################
+##################################################################################################################################################
+
+HASTA ESTE PUNTO LA AUTENTICACIÓN DEL USUARIO ES CORRECTA CON LA PLANTILLA DE MATERIAL DESIGN LITE
+
+
+12. Validaciones
+aplicable a app/models/user.rb donde se realizan los llamados a validates.
+
+Ahora se van a instalar las dependencias para pruebas definidas:
+En el archivo de gemas decido instalar lo siguiente, dentro de la sección de test y/o development
+
+12.1 rspec. De acuerdo a la documentación, lo recomendable es el uso de la siguiente instrucción de código:
+gem 'rspec-rails', '~> 3.8'
+
+
+12.2 De acuerdo a la documentación, se toma la versión mostrada a continuación y debe instalarse otra gema para rails 5.x, lo que aplica a mi caso.
+gem 'shoulda-matchers', '4.0.0.rc1'
+gem 'rails-controller-testing'
+
+12.3 al intentar añadir la gema factory_girl_rails compruebo que al parecer ha sufrido cambios y por ende ahora se llama: factory_bot_rails
+gem 'factory_bot_rails'
+
+
+Finalmente, siguiendo en orden al tutorial queda:
+gem 'shoulda-matchers', '4.0.0.rc1'
+gem 'rails-controller-testing'
+gem 'rspec-rails', '~> 3.8'
+gem 'factory_bot_rails'
+
+
+
+
+A continuación ejecuto bundle install
+shoulda-matchers -> métodos de ayuda específicos para rails
+rspec ->  Framework de pruebas
+factory_bot_rails -> Permite crear objetos de la base de datos para pruebas
+
+
+Para continuar ejecuto el siguiente comando:
+rails generate rspec:install
+Con ello se crean los archivos necesarios para trabajar con el framework
+
+En este caso me mostró el siguiente error:
+
+C:\Users\developer\Documents\CURSOS_PROGRAMACION\CodFacilito\RubyOnRails\RailsProject>rails generate rspec:install
+   identical  .rspec
+       exist  spec
+C:/RailsInstaller/Ruby2.3.3/lib/ruby/2.3.0/fileutils.rb:253:in `mkdir': Invalid argument @ dir_s_mkdir - C:/Users/developer/Documents/CURSOS_PROGRAMACION/CodFacilito/RubyOnRails/RailsProject/spec/C: (Errno::EINVAL)
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/2.3.0/fileutils.rb:253:in `fu_mkdir'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/2.3.0/fileutils.rb:227:in `block (2 levels) in mkdir_p'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/2.3.0/fileutils.rb:225:in `reverse_each'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/2.3.0/fileutils.rb:225:in `block in mkdir_p'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/2.3.0/fileutils.rb:211:in `each'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/2.3.0/fileutils.rb:211:in `mkdir_p'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/actions/create_file.rb:62:in `block in invoke!'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/actions/empty_directory.rb:117:in `invoke_with_conflict_check'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/actions/create_file.rb:60:in `invoke!'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/actions.rb:94:in `action'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/actions/create_file.rb:25:in `create_file'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/actions/file_manipulation.rb:26:in `copy_file'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/actions/directory.rb:94:in `block in execute!'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/actions/directory.rb:80:in `each'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/actions/directory.rb:80:in `execute!'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/actions/directory.rb:66:in `invoke!'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/actions.rb:94:in `action'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/actions/directory.rb:52:in `directory'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/rspec-rails-3.8.1/lib/generators/rspec/install/install_generator.rb:23:in `block in copy_spec_files'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/2.3.0/tmpdir.rb:89:in `mktmpdir'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/rspec-rails-3.8.1/lib/generators/rspec/install/install_generator.rb:20:in `copy_spec_files'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/command.rb:27:in `run'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/invocation.rb:126:in `invoke_command'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/invocation.rb:133:in `block in invoke_all'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/invocation.rb:133:in `each'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/invocation.rb:133:in `map'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/invocation.rb:133:in `invoke_all'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/group.rb:232:in `dispatch'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/base.rb:466:in `start'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/railties-5.1.6.1/lib/rails/generators.rb:269:in `invoke'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/railties-5.1.6.1/lib/rails/commands/generate/generate_command.rb:24:in `perform'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/command.rb:27:in `run'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor/invocation.rb:126:in `invoke_command'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/thor-0.20.3/lib/thor.rb:387:in `dispatch'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/railties-5.1.6.1/lib/rails/command/base.rb:63:in `perform'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/railties-5.1.6.1/lib/rails/command.rb:44:in `invoke'
+        from C:/RailsInstaller/Ruby2.3.3/lib/ruby/gems/2.3.0/gems/railties-5.1.6.1/lib/rails/commands.rb:16:in `<top (required)>'
+        from bin/rails:4:in `require'
+        from bin/rails:4:in `<main>'
+
+C:\Users\developer\Documents\CURSOS_PROGRAMACION\CodFacilito\RubyOnRails\RailsProject>
+
+
+HASTA AQUÍ LLEGA WINDOWS 10 donde el comando anterior no funciona ni de milagro.
+Ahora estoy utilizando Elementary OS en su versión 5, instalando Ruby y sus dependencias
+y Ruby On Rails mediante lo indicado en esta página.
+https://gorails.com/setup/ubuntu/16.04
+Nada más debo tener cuidado en cuanto al uso de postgres, MySQL y el manejo de NodeJS
+que en el tutorial tuvo una versión 8 y la modifiqué para 11 que es la última.
+De igual manera considero importante mencionar que al ejecutar la app que tenía
+en WIndows 10 falló todo el sistma de paquetes, al parecer, y tuve que reiniciar todo
+además de ello me di cuenta que instalar el cd de virtualbox en Elementary convirtió
+la máquina virtual en lenta y decidí no instalarla y mediante una recuperación obtener
+todas las configuraciones anteriores.
+En estos momentos trabajo con las siguientes versiones:
+developer@LENOVO-Elementary:~$ sudo su
+[sudo] contraseña para developer:
+root@LENOVO-Elementary:/home/developer# ruby -v
+ruby 2.5.3p105 (2018-10-18 revision 65156) [x86_64-linux]
+root@LENOVO-Elementary:/home/developer# rails -v
+Rails 5.2.2
+root@LENOVO-Elementary:/home/developer# bundle -v
+Bundler version 1.17.2
+root@LENOVO-Elementary:/home/developer# git -v
+root@LENOVO-Elementary:/home/developer# git --version
+git version 2.17.1
+root@LENOVO-Elementary:/home/developer# node -v
+v11.4.0
+root@LENOVO-Elementary:/home/developer#
+
+
+De aquí considero que estoy trabajando con todo en su última versión que vale la pena
+probar exceptuando tal vez git.
+
+
+
+A modo extra, la instalación de FiraCOde en Ubuntu:
+mkdir -p ~/.local/share/fonts
+for type in Bold Light Medium Regular Retina; do wget -O ~/.local/share/fonts/FiraCode-$type.ttf "https://github.com/tonsky/FiraCode/blob/master/distr/ttf/FiraCode-$type.ttf?raw=true"; done
+fc-cache -f
+
+
+
+VOLVIENDO AL CURSO:
+spec/spec_helper.rb se usa especialmente cuando no se usa rails
+Se añade el siguiente código al archivo /spec/rails_helper.rb
+
+Shoulda::Matchers.configure do |config|
+  config.integrate do |with|
+    with.test_framework :rspec
+    with.library :rails
+  end
+end
+AHora ejecucto desde la consola rspec
+
+
+Ahora genero el rspec del modelo User:
+rails generate rspec:model User
+ESte comando crea la carpeta factories y la carpeta models en la carpeta spec
+
+Ahora modifico el archivo
+spec/models/user_spec.rb para que tenga una prueba MUY básica
+it "should work" do
+  expect(true).to eq(true)
+end
+ahora ejecuto rspec para que todo archivo en la carpeta spec que termine en _spec se ejecute
+
+
+Ahpra para probar algo pendiente unicamente dejo it "ddd" lo que marca *
+
+Y para que falle se cambia uno de los trues a false
+
+
+
+12. Pruebas unitarias:
+
+en app/models/user.rb se indican las condiciones del modelo, en este caso se hizo una prueba con la librería shoulda:
+it {should validate_presence_of :username}
+mediante esta prueba se verifica que el usuario garantice la presencia de username, lo que funciona correctamente cuando
+se añade la propiedad presence: true en los validates de app/model/user.rb, pero al quitar esa opción y ejecutar la prueba
+vamos a tener un error.
+
+
+En app/models/user
+
+
+
+
+validates personalizados:
+
+dentro del modelo en app/models/user.rb
+
+validate :validate_username_regex
+private
+def validate_username_regex
+  unless username =~ /\A[a-zA-Z]+[a-zA-Z0-9_]*\z/
+    errors.add(:username,"El username debe iniciar con una letra")
+    errors.add(:username,"El username sólo debe contener _, letras y números")
+    #errors.add(:username,"El username debe iniciar con una letra y contener luego numeros, letras y _")
+  end
+end
+
+
+Propias pruebas:
+con diseño:
+básicamente es definir una fabricabot para ejecutar instrucciones específicas.
+
+
+RELACIONES DE LA BASE DE DATOS EN RAILS:
+
+ejecuto
+rails generate scaffold Post body:text user:references
+al archivo de la carpeta db/migrate le puedo añadir: t.references :user, foreign_key: true, index: true
+Ahora se ejecuta la migración:
+rake db:migrate
+
+
+posts => post_controller # index
+posts/new => posts_controller #new
+posts/:id => posts_controller #show
+posts/:id/edit => post_controller #edit
+POST
+/posts => post_controller #create
+PUTPATCH
+posts/:id => post_controller #update
+DELETE
+posts/:id => post_controller # destroy
+
+
+AHora agrego al proyeccto annotate
+se ejecuta:
+annotate o bundle exec annotate
+
+Ahora definíi esta función para gestionar más adecuadamente la presentación de layouts en caso de ser json
+
+private
+def set_layout layout = "application"
+  Proc.new {|controller| controller.request.format.json? ? false : layout}.call(self)
+end
+
+
+Imágenes:
+rails g migration add_attachment_cover_and_avatar_to_users
+
+Tener SetPost genera errores. ES una clase para definir lo de before y after
+
+
+
+
+
+Subir una imagen al servidor:
+1. Instalaciión de paperclip y de ImageMagic
+2. Configuraciones mostradas anteriormente
+
+
+
+Se agrega lo siguiente a app/models/user.rb
+
+has_attached_file :avatar, styles: {thumb: "100x100", medium: "300x300"}, default_url: "/images/:style/missing.png"
+has_attached_file :cover, styles: {thumb: "400x300", medium: "800x600"}, default_url: "/images/:style/missing_cover.png"
+
+validates_attachment_content_type :avatar, content_type: /\Aimage/\.*\Z/
+validates_attachment_content_type :cover, content_type: /\Aimage/\.*\Z/

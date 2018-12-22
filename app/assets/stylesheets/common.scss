@@ -1,0 +1,43 @@
+html, body {
+  height: 100%;
+}
+.full-height {
+  height: 100%;
+}
+.no-margin {
+  margin: 0;
+}
+.big-padding {
+  padding: 2em 1.5em;
+}
+.border-bottom {
+  border-bottom: 1px solid currentcolor;
+}
+.remove-bullet-points {
+  list-style-type: none;
+  margin: 0;
+}
+.circle {
+  border-radius: 50;
+}
+.medium {
+  font-size: 1.2em;
+}
+.full-width {
+  width: 100% !important;
+}
+.top-space {
+  margin-top: 1em;
+}
+.large-padding {
+  padding: 10px 15px;
+}
+.underline {
+  text-decoration: underline;
+}
+.text-left {
+  text-align: left;
+}
+.text-right {
+  text-align: right;
+}

@@ -1,0 +1,29 @@
+<%= form_with(model: post, remote: true) do |form| %>
+  <% if post.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(post.errors.count, "error") %> prohibited this post from being saved:</h2>
+
+      <ul>
+      <% post.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="full-width mdl-textfield mdl-js-textfield">
+    <%= form.text_area :body, class:"mdl-textfield__input",rows:3 %>
+    <%= form.label :body, "Comparte con la comunidad", class:"mdl-textfield__label" %>
+  </div>
+
+<% if false %>
+  <div class="field">
+    <%= form.label :user_id %>
+    <%= form.text_field :user_id %>
+  </div>
+<% end %>
+
+  <div class="actions text-right">
+    <%= form.submit "Publicar", class:"mdl-button mdl-js-button mdl-button--raised mdl-button--colored" %>
+  </div>
+<% end %>

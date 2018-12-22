@@ -1,0 +1,12 @@
+!!! 5
+%html
+  %head
+    %title RailsProject - Empty
+    /= csrf_meta_tags
+    /= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload'
+    %link{rel:"stylesheet",href:"https://fonts.googleapis.com/icon?family=Material+Icons"}
+    %link{rel:"stylesheet",href:"https://code.getmdl.io/1.3.0/material.indigo-pink.min.css"}
+    /= javascript_include_tag 'application', 'data-turbolinks-track': 'reload'
+  %body
+    = yield
+    %script{defer:true,src:"https://code.getmdl.io/1.3.0/material.min.js"}
